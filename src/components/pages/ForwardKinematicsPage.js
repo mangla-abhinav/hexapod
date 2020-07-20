@@ -1,43 +1,17 @@
 import React, { Component } from "react"
+import { renderToString } from "react-dom/server"
 import LegPoseWidget from "./LegPoseWidgets"
-import { Card, ToggleSwitch, BasicButton, NumberInputField, Slider } from "../generic"
+import { Card, ToggleSwitch, ResetButton, NumberInputField, Slider } from "../generic"
 import { DEFAULT_POSE } from "../../templates"
-import { SECTION_NAMES, LEG_NAMES, RESET_LABEL } from "../vars"
-
-const renderTwoColumns = cells => (
-    <>
-        <div className="row-container">
-            {cells[0]}
-            {cells[1]}
-        </div>
-        <div className="row-container">
-            {cells[2]}
-            {cells[3]}
-        </div>
-        <div className="row-container">
-            {cells[4]}
-            {cells[5]}
-        </div>
-    </>
-)
+import { SECTION_NAMES, LEG_NAMES } from "../vars"
 
 class ForwardKinematicsPage extends Component {
     pageName = SECTION_NAMES.forwardKinematics
+    state = { WidgetType: NumberInputField }
 
-    widgetTypes = {
-        Slider: Slider,
-        NumberInputField: NumberInputField,
-    }
+    componentDidMount = () => this.props.onMount(this.pageName)
 
-    state = { modeBool: false, widgetType: "NumberInputField" }
-
-    componentDidMount() {
-        this.props.onMount(this.pageName)
-    }
-
-    reset = () => {
-        this.props.onUpdate(DEFAULT_POSE)
-    }
+    reset = () => this.props.onUpdate(DEFAULT_POSE)
 
     updatePose = (name, angle, value) => {
         const pose = this.props.params.pose
@@ -49,51 +23,40 @@ class ForwardKinematicsPage extends Component {
     }
 
     toggleMode = () => {
-        const newModeBool = !this.state.modeBool
-        this.setState({
-            modeBool: newModeBool,
-            widgetType: newModeBool ? "Slider" : "NumberInputField",
-        })
+        const WidgetType = this.state.WidgetType === Slider ? NumberInputField : Slider
+        this.setState({ WidgetType })
     }
 
-    get toggleSwitch() {
-        return (
-            <ToggleSwitch
-                value={this.state.widgetType}
-                handleChange={this.toggleMode}
-                showLabel={false}
-            />
-        )
-    }
-
-    makeCell = name => (
-        <div className="cell">
-            <LegPoseWidget
-                key={name}
-                name={name}
-                pose={this.props.params.pose[name]}
-                onUpdate={this.updatePose}
-                WidgetType={this.widgetTypes[this.state.widgetType]}
-                renderStacked={this.state.modeBool}
-            />
-        </div>
+    legPoseWidget = name => (
+        <LegPoseWidget
+            key={name}
+            name={name}
+            pose={this.props.params.pose[name]}
+            onUpdate={this.updatePose}
+            WidgetType={this.state.WidgetType}
+            renderStacked={this.state.WidgetType === Slider}
+        />
     )
 
-    render = () => {
-        const cells = LEG_NAMES.map(name => this.makeCell(name))
-        const header = () => (
-            <div className="row-container flex-wrap">
-                <h2>{this.pageName}</h2>
-                {this.toggleSwitch}
-            </div>
-        )
-        return (
-            <Card title={header()} h="div">
-                {renderTwoColumns(cells)}
-                <BasicButton handleClick={this.reset}>{RESET_LABEL}</BasicButton>
-            </Card>
-        )
+    get toggleSwitch() {
+        const props = {
+            id: "FwdKinematicsSwitch",
+            value: renderToString(this.state.WidgetType),
+            handleChange: this.toggleMode,
+            showValue: false,
+        }
+
+        return <ToggleSwitch {...props} />
     }
+
+    render = () => (
+        <Card title={<h2>{this.pageName}</h2>} other={this.toggleSwitch}>
+            <div className="grid-cols-2">
+                {LEG_NAMES.map(name => this.legPoseWidget(name))}
+            </div>
+            <ResetButton reset={this.reset} />
+        </Card>
+    )
 }
 
 export default ForwardKinematicsPage

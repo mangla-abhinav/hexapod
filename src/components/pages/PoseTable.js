@@ -1,6 +1,6 @@
 import React from "react"
 import ReactMarkdown from "react-markdown"
-import { POSITION_NAMES_LIST } from "../hexapod"
+import { POSITION_NAMES_LIST } from "../../hexapod"
 
 const POSITION_ALIAS = {
     rightMiddle: "rm",
@@ -42,9 +42,7 @@ const poseTable = ({ pose }) => {
     const markdownMessage = poseMessage({ rm, rf, lf, lm, lb, rb })
     return (
         <div className="table-container">
-            <div className="cell" style={{}}>
-                <ReactMarkdown source={markdownMessage} />
-            </div>
+            <ReactMarkdown source={markdownMessage} />
         </div>
     )
 }

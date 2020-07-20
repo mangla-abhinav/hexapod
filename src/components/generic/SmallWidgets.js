@@ -1,6 +1,6 @@
 import React from "react"
 import ReactMarkdown from "react-markdown"
-import { ICON_COMPONENTS } from "../vars"
+import { ICON_COMPONENTS, RESET_LABEL } from "../vars"
 
 const AlertBox = ({ info }) => (
     <div className="message">
@@ -11,31 +11,27 @@ const AlertBox = ({ info }) => (
     </div>
 )
 
-const ToggleSwitch = ({ value, handleChange, showLabel, labelTop }) => (
+const ToggleSwitch = ({ id, value, handleChange, showValue }) => (
     <div className="switch-container">
-        {
-            // prettier-ignore
-            showLabel && labelTop ? (<label className="label">{value}<br /></label>) : null
-        }
-        <label className="switch">
-            <input type="checkbox" value={value} onChange={handleChange} />
+        <label className="switch" htmlFor={id}>
+            <input id={id} type="checkbox" value={value} onChange={handleChange} />
             <span className="toggle-switch-widget round"></span>
-            <br />
-            {showLabel && !labelTop ? <label className="label">{value}</label> : null}
+        </label>
+        <label className="label" htmlFor={id}>
+            {showValue ? value : null}
         </label>
     </div>
 )
 
-const Card = props => {
-    const { className, title, children } = props
-
-    return (
-        <div className={className}>
-            <props.h>{title}</props.h>
-            {children}
+const Card = ({ title, other, children }) => (
+    <div>
+        <div className="row-container flex-wrap">
+            {title}
+            {other}
         </div>
-    )
-}
+        {children}
+    </div>
+)
 
 const BasicButton = ({ handleClick, children }) => (
     <button type="button" className="button" onClick={handleClick}>
@@ -43,4 +39,8 @@ const BasicButton = ({ handleClick, children }) => (
     </button>
 )
 
-export { AlertBox, Card, ToggleSwitch, BasicButton }
+const ResetButton = ({ reset }) => (
+    <BasicButton handleClick={reset}>{RESET_LABEL}</BasicButton>
+)
+
+export { AlertBox, Card, ToggleSwitch, BasicButton, ResetButton }

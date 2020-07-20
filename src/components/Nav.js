@@ -1,15 +1,15 @@
 import React from "react"
-import { URL_LINKS, PATH_LINKS, ICON_COMPONENTS } from "./vars"
+import { URL_LINKS, PATH_LINKS } from "./vars"
 import { Link } from "react-router-dom"
 
 const NAV_BULLETS_PREFIX = "navBullet"
 const NAV_DETAILED_PREFIX = "navDetailed"
 
-const BulletPageLink = ({ path, description }) => (
+const BulletPageLink = ({ link, showDesc }) => (
     <li>
-        <Link to={path} className="link-icon">
+        <Link to={link.path} className="link-icon">
             <span>
-                {ICON_COMPONENTS.circle} {description}
+                {link.icon} {showDesc ? link.description : null}
             </span>
         </Link>
     </li>
@@ -32,7 +32,7 @@ const BulletUrlLink = ({ path, description, icon }) => (
 )
 
 const NavBullets = () => (
-    <ul className="row-container no-bullet top-bar">
+    <ul className="row-container no-bullet" id="top-bar">
         {URL_LINKS.map(link => (
             <BulletUrlLink
                 path={link.url}
@@ -42,7 +42,7 @@ const NavBullets = () => (
         ))}
 
         {PATH_LINKS.map(link => (
-            <BulletPageLink key={NAV_BULLETS_PREFIX + link.path} path={link.path} />
+            <BulletPageLink key={NAV_BULLETS_PREFIX + link.path} link={link} />
         ))}
     </ul>
 )
@@ -50,7 +50,7 @@ const NavBullets = () => (
 const NavDetailed = () => (
     <footer>
         <nav id="nav">
-            <ul className="column-container no-bullet">
+            <ul className="grid-cols-1 no-bullet">
                 {URL_LINKS.map(link => (
                     <BulletUrlLink
                         path={link.url}
@@ -63,8 +63,8 @@ const NavDetailed = () => (
                 {PATH_LINKS.map(link => (
                     <BulletPageLink
                         key={NAV_DETAILED_PREFIX + link.path}
-                        path={link.path}
-                        description={link.description}
+                        link={link}
+                        showDesc={true}
                     />
                 ))}
             </ul>

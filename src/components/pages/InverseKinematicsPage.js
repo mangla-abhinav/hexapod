@@ -1,72 +1,66 @@
 import React, { Component } from "react"
-import { sliderList, Card, BasicButton } from "../generic"
+import { sliderList, Card, ResetButton, AlertBox } from "../generic"
 import { solveInverseKinematics } from "../../hexapod"
+import { SECTION_NAMES, IK_SLIDERS_LABELS } from "../vars"
 import { DEFAULT_IK_PARAMS } from "../../templates"
-import { SECTION_NAMES, IK_SLIDERS_LABELS, RESET_LABEL } from "../vars"
-
-const _updatedStateParamsUnsolved = (ikParams, message) => ({
-    ikParams,
-    showPoseMessage: false,
-    showInfo: true,
-    info: { ...message, isAlert: true },
-})
-
-const _updatedStateParamsSolved = (ikParams, message) => ({
-    ikParams,
-    showPoseMessage: true,
-    showInfo: false,
-    info: { ...message, isAlert: false },
-})
+import PoseTable from "./PoseTable"
 
 class InverseKinematicsPage extends Component {
     pageName = SECTION_NAMES.inverseKinematics
+    state = { ikParams: DEFAULT_IK_PARAMS, errorMessage: null }
 
-    componentDidMount() {
-        this.props.onMount(this.pageName)
+    componentDidMount = () => this.props.onMount(this.pageName)
+
+    reset = () => {
+        const result = solveInverseKinematics(
+            this.props.params.dimensions,
+            DEFAULT_IK_PARAMS
+        )
+        this.updateHexapodPlot(result.hexapod, DEFAULT_IK_PARAMS)
+    }
+
+    updateHexapodPlot = (hexapod, ikParams) => {
+        this.setState({ ikParams, errorMessage: null })
+        this.props.onUpdate(hexapod)
     }
 
     updateIkParams = (name, value) => {
-        const ikParams = { ...this.props.params.ikParams, [name]: value }
+        const ikParams = { ...this.state.ikParams, [name]: value }
         const result = solveInverseKinematics(this.props.params.dimensions, ikParams)
 
         if (!result.obtainedSolution) {
-            const stateParams = _updatedStateParamsUnsolved(ikParams, result.message)
-            this.props.onUpdate(null, stateParams)
+            this.props.onUpdate(null)
+            this.setState({ errorMessage: result.message })
             return
         }
 
-        const stateParams = _updatedStateParamsSolved(ikParams, result.message)
-        this.props.onUpdate(result.hexapod, stateParams)
-    }
-
-    reset = () => {
-        const dimensions = this.props.params.dimensions
-        const result = solveInverseKinematics(dimensions, DEFAULT_IK_PARAMS)
-
-        const stateParams = _updatedStateParamsSolved(DEFAULT_IK_PARAMS, result.message)
-        this.props.onUpdate(result.hexapod, stateParams)
+        this.updateHexapodPlot(result.hexapod, ikParams)
     }
 
     get sliders() {
         return sliderList({
             names: IK_SLIDERS_LABELS,
-            values: this.props.params.ikParams,
+            values: this.state.ikParams,
             handleChange: this.updateIkParams,
         })
     }
 
-    render() {
-        const sliders = this.sliders
+    get additionalInfo() {
+        if (this.state.errorMessage) {
+            return <AlertBox info={this.state.errorMessage} />
+        }
 
-        return (
-            <Card title={this.pageName} h="h2">
-                <div className="row-container">{sliders.slice(0, 3)}</div>
-                <div className="row-container">{sliders.slice(3, 6)}</div>
-                <div className="row-container">{sliders.slice(6, 8)}</div>
-                <BasicButton handleClick={this.reset}>{RESET_LABEL}</BasicButton>
-            </Card>
-        )
+        return <PoseTable pose={this.props.params.pose} />
     }
+
+    render = () => (
+        <Card title={<h2>{this.pageName}</h2>}>
+            <div className="grid-cols-3">{this.sliders.slice(0, 6)}</div>
+            <div className="grid-cols-2">{this.sliders.slice(6, 8)}</div>
+            <ResetButton reset={this.reset} />
+            {this.additionalInfo}
+        </Card>
+    )
 }
 
 export default InverseKinematicsPage

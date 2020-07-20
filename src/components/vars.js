@@ -1,6 +1,6 @@
 import React from "react"
 import { GiCoffeeMug } from "react-icons/gi"
-import { FaGithubAlt, FaTimes, FaCheck } from "react-icons/fa"
+import { FaGithubAlt, FaTimes, FaCheck, FaHome, FaSquare } from "react-icons/fa"
 import { GrStatusGoodSmall } from "react-icons/gr"
 
 const SECTION_NAMES = {
@@ -9,6 +9,7 @@ const SECTION_NAMES = {
     forwardKinematics: "Forward Kinematics",
     legPatterns: "Leg Patterns",
     landingPage: "Root",
+    walkingGaits: "Walking Gaits",
 }
 
 const PATH_NAMES = {
@@ -16,6 +17,7 @@ const PATH_NAMES = {
     forwardKinematics: "/forward-kinematics",
     legPatterns: "/leg-patterns",
     landingPage: "/",
+    walkingGaits: "/walking-gaits",
 }
 
 const ANGLE_NAMES = ["alpha", "beta", "gamma"]
@@ -31,6 +33,18 @@ const LEG_NAMES = [
 
 const IK_SLIDERS_LABELS = ["tx", "ty", "tz", "rx", "ry", "rz", "hipStance", "legStance"]
 const RESET_LABEL = "reset"
+
+const GAIT_SLIDER_LABELS = [
+    "hipSwing",
+    "liftSwing",
+    "legStance",
+    "hipStance",
+    "tx",
+    "tz",
+    "rx",
+    "ry",
+    "stepCount",
+]
 
 /*************
  * RANGE PARAMS
@@ -62,6 +76,17 @@ const RANGE_PARAMS = {
     gamma: RANGES[180],
 }
 
+const GAIT_RANGE_PARAMS = {
+    tx: { minVal: -0.25, maxVal: 0.25, stepVal: 0.01, defaultVal: 0 },
+    tz: { minVal: -0.5, maxVal: 0.5, stepVal: 0.01, defaultVal: 0 },
+    rx: { minVal: -15, maxVal: 15, stepVal: 0.5, defaultVal: 0 },
+    ry: { minVal: -15, maxVal: 15, stepVal: 0.5, defaultVal: 0 },
+    legStance: { minVal: -50, maxVal: 50, stepVal: 0.5, defaultVal: 0 },
+    hipStance: { minVal: 0, maxVal: 40, stepVal: 0.5, defaultVal: 20 },
+    hipSwing: { minVal: 10, maxVal: 40, stepVal: 0.5, defaultVal: 25 },
+    liftSwing: { minVal: 10, maxVal: 70, stepVal: 0.5, defaultVal: 40 },
+    stepCount: { minVal: 3, maxVal: 7, stepVal: 1, defaultVal: 5 },
+}
 /*************
  * ICONS
  *************/
@@ -69,9 +94,11 @@ const RANGE_PARAMS = {
 const ICON_COMPONENTS = {
     mug: <GiCoffeeMug className="vertical-align" />,
     circle: <GrStatusGoodSmall className="small-icon" />,
+    square: <FaSquare className="small-icon" />,
     octocat: <FaGithubAlt className="vertical-align" />,
     check: <FaCheck className="vertical-align" />,
     times: <FaTimes className="vertical-align" />,
+    home: <FaHome className="vertical-align" />,
 }
 
 /*************
@@ -82,18 +109,28 @@ const PATHS = {
     inverseKinematics: {
         path: PATH_NAMES.inverseKinematics,
         description: SECTION_NAMES.inverseKinematics,
+        icon: ICON_COMPONENTS.circle,
     },
     forwardKinematics: {
         path: PATH_NAMES.forwardKinematics,
         description: SECTION_NAMES.forwardKinematics,
+        icon: ICON_COMPONENTS.circle,
     },
     legPatterns: {
         path: PATH_NAMES.legPatterns,
         description: SECTION_NAMES.legPatterns,
+        icon: ICON_COMPONENTS.circle,
     },
     landingPage: {
         path: PATH_NAMES.landingPage,
         description: SECTION_NAMES.landingPage,
+        icon: ICON_COMPONENTS.home,
+    },
+
+    walkingGaits: {
+        path: PATH_NAMES.walkingGaits,
+        description: SECTION_NAMES.walkingGaits,
+        icon: ICON_COMPONENTS.circle,
     },
 }
 
@@ -115,6 +152,7 @@ const PATH_LINKS = [
     PATHS.inverseKinematics,
     PATHS.forwardKinematics,
     PATHS.legPatterns,
+    PATHS.walkingGaits,
     PATHS.landingPage,
 ]
 
@@ -128,23 +166,7 @@ const LANDING_PAGE_MESSAGE = `
 
 # Mithi's Bare Minimum Hexapod Robot Simulator
 
-- Solve (and visualize) [forward][1] and [inverse][2] kinematics purely on your browser!
-It's a complete rewrite of the [one][3] I wrote in Python 🐍.
-No more server-side computations!
-
-- Consider buying me a [couple cups of coffee 🍵 🍵 🍵][4] to motivate me
-to build other robotics related visualizers. (Quadrotors?!)
-
-- Love coding? However big or small, any contribution to [improve the source code][5] is always appreciated. 💙
-
-## Love, Mithi
-
-[1]: /forward-kinematics
-[2]: /inverse-kinematics
-[3]: https://github.com/mithi/hexapod-robot-simulator
-[4]: https://ko-fi.com/minimithi
-[5]: https://github.com/mithi/hexapod/blob/master/CONTRIBUTING.md
-
+Enjoy your stay and share with your friends!
 `
 
 export {
@@ -155,9 +177,11 @@ export {
     DIMENSION_NAMES,
     LEG_NAMES,
     IK_SLIDERS_LABELS,
+    GAIT_SLIDER_LABELS,
     RESET_LABEL,
     PATHS,
     URL_LINKS,
     PATH_LINKS,
     RANGE_PARAMS,
+    GAIT_RANGE_PARAMS,
 }

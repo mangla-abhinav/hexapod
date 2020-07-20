@@ -1,77 +1,58 @@
 import React, { Component } from "react"
 import NumberInputField from "./generic/NumberInputField"
-import { Card, BasicButton, ToggleSwitch } from "./generic/SmallWidgets"
+import { Card, ResetButton, ToggleSwitch } from "./generic/SmallWidgets"
 import { DEFAULT_DIMENSIONS } from "../templates"
-import { SECTION_NAMES, DIMENSION_NAMES, RESET_LABEL, RANGE_PARAMS } from "./vars"
+import { SECTION_NAMES, DIMENSION_NAMES, RANGE_PARAMS } from "./vars"
 
 class DimensionsWidget extends Component {
     sectionName = SECTION_NAMES.dimensions
-    state = { isFine: true, granularity: 1 }
+    state = { isFine: true }
 
-    componentDidMount() {
-        this.setState({ granularity: 1, toggleLabel: "1x" })
-    }
+    reset = () => this.props.onUpdate(DEFAULT_DIMENSIONS)
 
-    reset = () => {
-        const dimensions = DEFAULT_DIMENSIONS
-        this.props.onUpdate(dimensions)
-    }
+    toggleMode = () => this.setState({ isFine: !this.state.isFine })
 
-    toggleMode = () => {
-        const isFine = !this.state.isFine
-        this.setState({
-            isFine,
-            granularity: isFine ? 1 : 5,
-            toggleLabel: isFine ? "1x" : "5x",
-        })
-    }
+    updateFieldState = (name, value) => this.updateDimensions(name, value)
 
     updateDimensions = (name, value) => {
         const dimensions = { ...this.props.params.dimensions, [name]: value }
         this.props.onUpdate(dimensions)
     }
 
-    updateFieldState = (name, value) => {
-        this.updateDimensions(name, value)
-    }
-
     get toggleSwitch() {
-        return (
-            <ToggleSwitch
-                value={this.state.toggleLabel}
-                handleChange={this.toggleMode}
-                showLabel={true}
-                labelTop={false}
-            />
-        )
+        const props = {
+            id: "DimensionsWidgetSwitch",
+            value: this.state.isFine ? "1x" : "5x",
+            handleChange: this.toggleMode,
+            showValue: true,
+        }
+
+        return <ToggleSwitch {...props} />
     }
 
     get NumberInputFields() {
         const { minVal, maxVal } = RANGE_PARAMS.dimensionInputs
-        return DIMENSION_NAMES.map(name => (
-            <NumberInputField
-                key={name}
-                name={name}
-                rangeParams={{ minVal, maxVal, stepVal: this.state.granularity }}
-                value={this.props.params.dimensions[name]}
-                handleChange={this.updateFieldState}
-            />
-        ))
-    }
+        const stepVal = this.state.isFine ? 1 : 5
+        const dimensions = this.props.params.dimensions
 
-    get header() {
-        return (
-            <div className="row-container flex-wrap">
-                <h2>{this.sectionName}</h2>
-                {this.toggleSwitch}
-            </div>
-        )
+        const numberInputFields = DIMENSION_NAMES.map(name => {
+            const props = {
+                name,
+                value: dimensions[name],
+                rangeParams: { minVal, maxVal, stepVal },
+                handleChange: this.updateFieldState,
+            }
+
+            return <NumberInputField {...props} key={name} />
+        })
+
+        return <div className="grid-cols-6">{numberInputFields}</div>
     }
 
     render = () => (
-        <Card title={this.header} h="div">
-            <div className="row-container flex-wrap">{this.NumberInputFields}</div>
-            <BasicButton handleClick={this.reset}>{RESET_LABEL}</BasicButton>
+        <Card title={<h2>{this.sectionName}</h2>} other={this.toggleSwitch}>
+            {this.NumberInputFields}
+            <ResetButton reset={this.reset} />
         </Card>
     )
 }

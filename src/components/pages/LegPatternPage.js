@@ -1,44 +1,46 @@
 import React, { Component } from "react"
-import { sliderList, Card, BasicButton } from "../generic"
+import { sliderList, Card, ResetButton } from "../generic"
 import { DEFAULT_POSE, DEFAULT_PATTERN_PARAMS } from "../../templates"
-import { SECTION_NAMES, ANGLE_NAMES, RESET_LABEL } from "../vars"
+import { SECTION_NAMES, ANGLE_NAMES } from "../vars"
 
 class LegPatternPage extends Component {
     pageName = SECTION_NAMES.legPatterns
+    state = { patternParams: DEFAULT_PATTERN_PARAMS }
 
-    componentDidMount() {
+    componentDidMount = () => {
         this.props.onMount(this.pageName)
+        this.reset()
+    }
+
+    reset = () => {
+        this.props.onUpdate(DEFAULT_POSE)
+        this.setState({ patternParams: DEFAULT_PATTERN_PARAMS })
     }
 
     updatePatternPose = (name, value) => {
-        const { alpha, beta, gamma } = this.props.params.patternParams
-        const patternParams = { alpha, beta, gamma, [name]: Number(value) }
-
+        const patternParams = { ...this.state.patternParams, [name]: Number(value) }
         let newPose = {}
 
         for (const leg in DEFAULT_POSE) {
             newPose[leg] = patternParams
         }
 
-        this.props.onUpdate(newPose, patternParams)
-    }
-
-    reset = () => {
-        this.props.onUpdate(DEFAULT_POSE, DEFAULT_PATTERN_PARAMS)
+        this.props.onUpdate(newPose)
+        this.setState({ patternParams })
     }
 
     get sliders() {
         return sliderList({
             names: ANGLE_NAMES,
-            values: this.props.params.patternParams,
+            values: this.state.patternParams,
             handleChange: this.updatePatternPose,
         })
     }
 
     render = () => (
-        <Card title={this.pageName} h="h2">
-            <div className="row-container">{this.sliders}</div>
-            <BasicButton handleClick={this.reset}>{RESET_LABEL}</BasicButton>
+        <Card title={<h2>{this.pageName}</h2>}>
+            <div className="grid-cols-1">{this.sliders}</div>
+            <ResetButton reset={this.reset} />
         </Card>
     )
 }

@@ -1,22 +1,16 @@
 import React from "react"
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom"
+import { BrowserRouter as Router, Route, Switch, Redirect } from "react-router-dom"
 import ReactGA from "react-ga"
 import { VirtualHexapod, getNewPlotParams } from "./hexapod"
 import * as defaults from "./templates"
 import { SECTION_NAMES, PATHS } from "./components/vars"
-import {
-    PoseTable,
-    Nav,
-    NavDetailed,
-    HexapodPlot,
-    DimensionsWidget,
-    AlertBox,
-} from "./components"
+import { Nav, NavDetailed, HexapodPlot, DimensionsWidget } from "./components"
 import {
     ForwardKinematicsPage,
     InverseKinematicsPage,
     LandingPage,
     LegPatternPage,
+    WalkingGaitsPage,
 } from "./components/pages"
 
 ReactGA.initialize("UA-170794768-1", {
@@ -26,181 +20,140 @@ ReactGA.initialize("UA-170794768-1", {
 })
 
 class App extends React.Component {
+    plot = {
+        cameraView: defaults.CAMERA_VIEW,
+        data: defaults.DATA,
+        layout: defaults.LAYOUT,
+    }
+
     state = {
-        currentPage: SECTION_NAMES.LandingPage,
         inHexapodPage: false,
-        showPoseMessage: true,
-        showInfo: false,
-        info: {},
-
-        ikParams: defaults.DEFAULT_IK_PARAMS,
-        patternParams: defaults.DEFAULT_PATTERN_PARAMS,
-
-        hexapodParams: {
-            dimensions: defaults.DEFAULT_DIMENSIONS,
-            pose: defaults.DEFAULT_POSE,
-        },
-
-        plot: {
-            data: defaults.DATA,
-            layout: defaults.LAYOUT,
-            latestCameraView: defaults.CAMERA_VIEW,
-            revisionCounter: 0,
-        },
+        hexapodDimensions: defaults.DEFAULT_DIMENSIONS,
+        hexapodPose: defaults.DEFAULT_POSE,
+        revision: 0,
     }
 
     /* * * * * * * * * * * * * *
-     * Handle page load
+     * Page load and plot update handlers
      * * * * * * * * * * * * * */
 
     onPageLoad = pageName => {
         ReactGA.pageview(window.location.pathname + window.location.search)
 
         if (pageName === SECTION_NAMES.landingPage) {
-            this.setState({
-                currentPage: pageName,
-                inHexapodPage: false,
-                showInfo: false,
-                showPoseMessage: false,
-            })
+            this.setState({ inHexapodPage: false })
             return
         }
 
-        this.setState({
-            currentPage: pageName,
-            inHexapodPage: true,
-            showInfo: false,
-            showPoseMessage: false,
-            ikParams: defaults.DEFAULT_IK_PARAMS,
-            patternParams: defaults.DEFAULT_PATTERN_PARAMS,
-            hexapodParams: { ...this.state.hexapodParams, pose: defaults.DEFAULT_POSE },
-        })
-        this.updatePlot(this.state.hexapodParams.dimensions, defaults.DEFAULT_POSE)
+        this.setState({ inHexapodPage: true })
+        this.updatePlot(this.state.hexapodDimensions, defaults.DEFAULT_POSE)
     }
 
-    /* * * * * * * * * * * * * *
-     * Handle plot update
-     * * * * * * * * * * * * * */
+    updatePlotWithHexapod = hexapod => {
+        if (!hexapod || !hexapod.foundSolution) {
+            return
+        }
+
+        const [data, layout] = getNewPlotParams(hexapod, this.plot.cameraView)
+        this.plot = { ...this.plot, data, layout }
+
+        this.setState({
+            revision: this.state.revision + 1,
+            hexapodDimensions: hexapod.dimensions,
+            hexapodPose: hexapod.pose,
+        })
+    }
+
+    logCameraView = relayoutData => {
+        this.plot.cameraView = relayoutData["scene.camera"]
+    }
 
     updatePlot = (dimensions, pose) => {
         const newHexapodModel = new VirtualHexapod(dimensions, pose)
         this.updatePlotWithHexapod(newHexapodModel)
     }
 
-    updatePlotWithHexapod = hexapod => {
-        if (hexapod === null || hexapod === undefined || !hexapod.foundSolution) {
-            return
-        }
+    updateDimensions = dimensions => this.updatePlot(dimensions, this.state.hexapodPose)
 
-        const [data, layout] = getNewPlotParams(hexapod, this.state.plot.latestCameraView)
-        this.setState({
-            plot: {
-                ...this.state.plot,
-                data,
-                layout,
-                revisionCounter: this.state.plot.revisionCounter + 1,
-            },
-            hexapodParams: {
-                dimensions: hexapod.dimensions,
-                pose: hexapod.pose,
-            },
-        })
-    }
-
-    logCameraView = relayoutData => {
-        const newCameraView = relayoutData["scene.camera"]
-        const plot = { ...this.state.plot, latestCameraView: newCameraView }
-        this.setState({ ...this.state, plot: plot })
-    }
+    updatePose = pose => this.updatePlot(this.state.hexapodDimensions, pose)
 
     /* * * * * * * * * * * * * *
-     * Handle individual input fields update
+     * Widgets
      * * * * * * * * * * * * * */
 
-    updateIkParams = (hexapod, updatedStateParams) => {
-        this.updatePlotWithHexapod(hexapod)
-        this.setState({ ...updatedStateParams })
+    hexapodPlot = () => {
+        const { revision, inHexapodPage } = this.state
+        const { data, layout } = this.plot
+        const props = { data, layout, revision, onRelayout: this.logCameraView }
+
+        return (
+            <div hidden={!inHexapodPage} className="plot border">
+                <HexapodPlot {...props} />
+            </div>
+        )
     }
 
-    updateDimensions = dimensions =>
-        this.updatePlot(dimensions, this.state.hexapodParams.pose)
-
-    updatePose = pose => this.updatePlot(this.state.hexapodParams.dimensions, pose)
-
-    updatePatternPose = (pose, patternParams) => {
-        this.updatePlot(this.state.hexapodParams.dimensions, pose)
-        this.setState({ patternParams })
-    }
-
-    /* * * * * * * * * * * * * *
-     * Control display of widgets
-     * * * * * * * * * * * * * */
-
-    mightShowMessage = () =>
-        this.state.showInfo ? <AlertBox info={this.state.info} /> : null
-
-    mightShowDetailedNav = () => (this.state.inHexapodPage ? <NavDetailed /> : null)
-
-    mightShowPoseTable = () => {
-        if (this.state.showPoseMessage) {
-            return <PoseTable pose={this.state.hexapodParams.pose} />
-        }
-    }
-
-    mightShowDimensions = () => {
-        if (this.state.inHexapodPage) {
-            return (
-                <DimensionsWidget
-                    params={{ dimensions: this.state.hexapodParams.dimensions }}
-                    onUpdate={this.updateDimensions}
-                />
-            )
-        }
-    }
-
-    mightShowPlot = () => (
-        <div className={this.state.inHexapodPage ? "plot border" : "no-display"}>
-            <HexapodPlot
-                data={this.state.plot.data}
-                layout={this.state.plot.layout}
-                onRelayout={this.logCameraView}
-                revision={this.state.plot.revisionCounter}
+    dimensions = () => (
+        <div hidden={!this.state.inHexapodPage}>
+            <DimensionsWidget
+                params={{ dimensions: this.state.hexapodDimensions }}
+                onUpdate={this.updateDimensions}
             />
+        </div>
+    )
+
+    navDetailed = () => (
+        <div hidden={!this.state.inHexapodPage}>
+            <NavDetailed />
         </div>
     )
 
     /* * * * * * * * * * * * * *
      * Pages
      * * * * * * * * * * * * * */
+    get hexapodParams() {
+        return {
+            dimensions: this.state.hexapodDimensions,
+            pose: this.state.hexapodPose,
+        }
+    }
 
-    showPage = () => (
+    pageComponent = (Component, onUpdate, params) => (
+        <Component onMount={this.onPageLoad} onUpdate={onUpdate} params={params} />
+    )
+
+    pageLanding = () => this.pageComponent(LandingPage)
+
+    pagePatterns = () => this.pageComponent(LegPatternPage, this.updatePose)
+
+    pageIk = () =>
+        this.pageComponent(
+            InverseKinematicsPage,
+            this.updatePlotWithHexapod,
+            this.hexapodParams
+        )
+
+    pageFk = () =>
+        this.pageComponent(ForwardKinematicsPage, this.updatePose, {
+            pose: this.state.hexapodPose,
+        })
+
+    pageWalking = () =>
+        this.pageComponent(
+            WalkingGaitsPage,
+            this.updatePlotWithHexapod,
+            this.hexapodParams
+        )
+
+    page = () => (
         <Switch>
-            <Route path="/" exact>
-                <LandingPage onMount={this.onPageLoad} />
-            </Route>
-            <Route path={PATHS.forwardKinematics.path}>
-                <ForwardKinematicsPage
-                    params={{ pose: this.state.hexapodParams.pose }}
-                    onUpdate={this.updatePose}
-                    onMount={this.onPageLoad}
-                />
-            </Route>
-            <Route path={PATHS.inverseKinematics.path}>
-                <InverseKinematicsPage
-                    params={{
-                        dimensions: this.state.hexapodParams.dimensions,
-                        ikParams: this.state.ikParams,
-                    }}
-                    onUpdate={this.updateIkParams}
-                    onMount={this.onPageLoad}
-                />
-            </Route>
-            <Route path={PATHS.legPatterns.path}>
-                <LegPatternPage
-                    params={{ patternParams: this.state.patternParams }}
-                    onUpdate={this.updatePatternPose}
-                    onMount={this.onPageLoad}
-                />
+            <Route path="/" exact component={this.pageLanding} />
+            <Route path={PATHS.legPatterns.path} exact component={this.pagePatterns} />
+            <Route path={PATHS.forwardKinematics.path} exact component={this.pageFk} />
+            <Route path={PATHS.inverseKinematics.path} exact component={this.pageIk} />
+            <Route path={PATHS.walkingGaits.path} exact component={this.pageWalking} />
+            <Route>
+                <Redirect to="/" />
             </Route>
         </Switch>
     )
@@ -214,14 +167,12 @@ class App extends React.Component {
             <Nav />
             <div className="main content">
                 <div className="sidebar column-container cell">
-                    {this.mightShowDimensions()}
-                    {this.showPage()}
-                    {this.mightShowPoseTable()}
-                    {this.mightShowMessage()}
+                    {this.dimensions()}
+                    {this.page()}
                 </div>
-                {this.mightShowPlot()}
+                {this.hexapodPlot()}
             </div>
-            {this.mightShowDetailedNav()}
+            {this.navDetailed()}
         </Router>
     )
 }
